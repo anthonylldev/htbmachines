@@ -26,21 +26,39 @@ function ctrl_c() {
 }
 
 function help_panel() {
-  echo -e "\n${yellowColour}[+]${endColour} ${grayColour}Usage:${endColour}\n"
-  echo -e "\t${purpleColour}h)${endColour} ${grayColour}Show help panel.${endColour}"
-  echo -e "\t${purpleColour}u)${endColour} ${grayColour}Download or update necessary files.${endColour}"
-  echo -e "\t${purpleColour}l)${endColour} ${grayColour}List machines${endColour}"
-  echo -e "\t${purpleColour}y)${endColour} ${grayColour}Get link of the machine resolution by machine name.${endColour}"
-  echo -e "\t${purpleColour}m)${endColour} ${grayColour}Search by machine name.${endColour}"
-  echo -e "\t${purpleColour}i)${endColour} ${grayColour}Search by ip address.${endColour}"
-  echo -e "\t${purpleColour}d)${endColour} ${grayColour}Search by difficulty:${endColour}"
+  echo -e "\n${yellowColour}[+]${endColour} ${grayColour}Script Usage:${endColour}\n"
+  echo -e "\t${blueColour}h)${endColour} ${grayColour}Show help panel.${endColour}"
+  echo -e "\t${blueColour}u)${endColour} ${grayColour}Download or update necessary files.${endColour}"
+  echo -e "\t${blueColour}l)${endColour} ${grayColour}List all available machines.${endColour}"
+
+  echo -e "\n${yellowColour}[+]${endColour} ${grayColour}Search Options:${endColour}\n"
+
+  echo -e "\t${blueColour}y)${endColour} ${grayColour}Get solution video link by machine name.${endColour}"
+  echo -e "\t\t${blueColour}Usage:${endColour} ${grayColour}-y <machine_name>${endColour}"
+
+  echo -e "\t${blueColour}m)${endColour} ${grayColour}Search by machine name.${endColour}"
+  echo -e "\t\t${blueColour}Usage:${endColour} ${grayColour}-m <machine_name>${endColour}"
+
+  echo -e "\t${blueColour}i)${endColour} ${grayColour}Search by IP address.${endColour}"
+  echo -e "\t\t${blueColour}Usage:${endColour} ${grayColour}-i <ip_address>${endColour}"
+
+  echo -e "\t${blueColour}d)${endColour} ${grayColour}Search by difficulty level:${endColour}"
   echo -e "\t\t${turquoiseColour}1${endColour} ${grayColour}- Easy${endColour}"
   echo -e "\t\t${turquoiseColour}2${endColour} ${grayColour}- Normal${endColour}"
   echo -e "\t\t${turquoiseColour}3${endColour} ${grayColour}- Difficult${endColour}"
   echo -e "\t\t${turquoiseColour}4${endColour} ${grayColour}- Insane${endColour}"
-  echo -e "\t${purpleColour}o)${endColour} ${grayColour}Search by os:${endColour}"
+  echo -e "\t\t${blueColour}Usage:${endColour} ${grayColour}-d <level>${endColour}"
+
+  echo -e "\t${blueColour}o)${endColour} ${grayColour}Search by operating system:${endColour}"
   echo -e "\t\t${turquoiseColour}1${endColour} ${grayColour}- Linux${endColour}"
-  echo -e "\t\t${turquoiseColour}2${endColour} ${grayColour}- Windows${endColour}\n"
+  echo -e "\t\t${turquoiseColour}2${endColour} ${grayColour}- Windows${endColour}"
+  echo -e "\t\t${blueColour}Usage:${endColour} ${grayColour}-o <os_type>${endColour}"
+
+  echo -e "\t${blueColour}s)${endColour} ${grayColour}Search by skill.${endColour}"
+  echo -e "\t\t${blueColour}Usage:${endColour} ${grayColour}-s <skill>${endColour}"
+
+  echo -e "\n${yellowColour}[+]${endColour} ${grayColour}Example Usage:${endColour}"
+  echo -e "\t${blueColour}bash htbmachines.sh -m <machine_name> -i <ip_address> -d <difficulty_level> -o <os_type>${endColour}\n"
 }
 
 function show_difficulty_message() {
@@ -131,8 +149,8 @@ function search_by_ip() {
 }
 
 function search_by_skills() {
-  skills=$1
-  echo -e "$(cat ${file_name} | awk "/like: \"${skills}\"/"  | tr -d '"' | tr -d ',' | sed 's/^ *//' | awk '{print $2}')"
+  skill=$1
+  echo -e "$(cat ${file_name} | awk "/like: \"${skill}\"/"  | tr -d '"' | tr -d ',' | sed 's/^ *//' | awk '{print $2}')"
 }
 
 function search() {
@@ -140,7 +158,7 @@ function search() {
   ip_address=$2
   difficulty=$3
   os=$4
-  skills=$5
+  skill=$5
   result=$(process_list | sed '1,2d')
 
   if [ "${machine_name}" ]; then
@@ -201,11 +219,11 @@ function search() {
     result=$(echo "${result}" | grep "${os_label}")
   fi
 
-  if [ "${skills}" ]; then
-    to_evaluate=$(search_by_skills "${skills}")
+  if [ "${skill}" ]; then
+    to_evaluate=$(search_by_skills "${skill}")
 
     if [ "${to_evaluate}" ]; then
-      result=$(echo "${result}" | grep "${skills}")
+      result=$(echo "${result}" | grep "${skill}")
     else
       result=""
     fi
@@ -251,7 +269,7 @@ while getopts "huly:m:i:d:o:s:" arg 2>/dev/null; do
     ;;
   s)
     parameter_counter=3
-    skills=$OPTARG
+    skill=$OPTARG
     ;;
   y)
     parameter_counter=4
@@ -270,10 +288,10 @@ if [ $parameter_counter -eq 1 ]; then
 elif [ $parameter_counter -eq 2 ]; then
   list
 elif [ $parameter_counter -eq 3 ]; then
-  if [ ! "${machine_name}" ] && [ ! "${ip_address}" ] && [ ! "${difficulty}" ] && [ ! "${os}" ] && [ ! "${skills}" ]; then
+  if [ ! "${machine_name}" ] && [ ! "${ip_address}" ] && [ ! "${difficulty}" ] && [ ! "${os}" ] && [ ! "${skill}" ]; then
     echo -e "\n${yellowColour}[+]${endColour} ${grayColour}No elements found.${endColour}\n"
   else
-    search "${machine_name}" "${ip_address}" "${difficulty}" "${os}" "${skills}"
+    search "${machine_name}" "${ip_address}" "${difficulty}" "${os}" "${skill}"
   fi
 elif [ $parameter_counter -eq 4 ]; then
   get_youtube_link "${machine_name}"
