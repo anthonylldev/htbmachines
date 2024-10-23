@@ -73,10 +73,21 @@ function update() {
 
 function search_machine() {
   machine_name=$1
-  info=$(cat ${file_name} | awk "/name: \"${machine_name}\"/,/resuelta:/" | grep -vE "id:|sku:|resuelta:" | tr -d '"' | tr -d ',' | sed 's/^ *//')
+  info=$(process_list | grep "${machine_name}")
 
   if [ "${info}" ]; then
-    echo -e "\n${info}\n"
+    name=$(echo "${info}" | awk '{print $1}')
+    ip=$(echo "${info}" | awk '{print $2}')
+    os=$(echo "${info}" | awk '{print $3}')
+    difficulty=$(echo "${info}" | awk '{print $4}')
+    like=$(echo "${info}" | awk '{for(i=5; i<=NF; i++) printf "%s ", $i; print ""}')
+
+    echo -e "\n${blueColour}Name:${endColour} ${name}"
+    echo -e "${blueColour}IP:${endColour} ${ip}"
+    echo -e "${blueColour}OS:${endColour} ${os}"
+    echo -e "${blueColour}Difficulty:${endColour} ${difficulty}"
+    echo -e "${blueColour}Like:${endColour} ${like}\n"
+
   else
     echo -e "\n${redColour}[-] Machine with name${endColour} ${blueColour}${machine_name}${endColour} ${redColour}not found.${endColour}\n"
   fi
@@ -104,8 +115,10 @@ function get_youtube_link() {
   fi
 }
 
-function list() {
-  cat ${file_name} | grep -vE "pathname:" | grep "name: \"" | awk 'NF{print $NF}' | tr -d ',' | tr -d '"' | column
+list() {
+  echo -e "\n"
+  process_list
+  echo -e "\n"
 }
 
 function list_by_difficulty() {
@@ -168,6 +181,24 @@ function list_by_os() {
     echo -e "\t${turquoiseColour}2${endColour} ${grayColour}- Windows${endColour}"
     echo -e "\n"
   fi
+}
+
+function process_list() {
+  machines=$(sed '/\/\*\! For license information please see bundle.js.LICENSE.txt \*\//,/        }(), lf = \[{/d' ${file_name} | grep -vE / | grep -vE \} | awk "/name:/,/resuelta:/" | grep -vE "id:|sku:|skills:" | tr -d ',' | tr -d '"' | sed 's/^ *//')
+  echo "${machines}" | sed 's/^resuelta: !0 *//' | awk -v RS="" -F'\n' '
+    BEGIN { print "Name|IP|SO|Dificultad|Like"; print "----|--|--|---------|----" }
+    {
+        for (i=1; i<=NF; i++) {
+            split($i, a, ": ");
+            if (i == 1) name = a[2];
+            else if (i == 2) ip = a[2];
+            else if (i == 3) so = a[2];
+            else if (i == 4) dificultad = a[2];
+            else if (i == 5) like = a[2];
+        }
+        print name "|" ip "|" so "|" dificultad "|" like;
+    }
+' | column -t -s '|'
 }
 
 # Execution
