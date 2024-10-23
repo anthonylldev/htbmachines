@@ -26,7 +26,7 @@ function ctrl_c() {
 }
 
 function help_panel() {
-  echo -e "\n${yellowColour}[+]${endColour} ${grayColour}Usage:${endColour}"
+  echo -e "\n${yellowColour}[+]${endColour} ${grayColour}Usage:${endColour}\n"
   echo -e "\t${purpleColour}h)${endColour} ${grayColour}Show help panel.${endColour}"
   echo -e "\t${purpleColour}u)${endColour} ${grayColour}Download or update necessary files.${endColour}"
   echo -e "\t${purpleColour}l)${endColour} ${grayColour}List machines${endColour}"
@@ -38,10 +38,9 @@ function help_panel() {
   echo -e "\t\t${turquoiseColour}2${endColour} ${grayColour}- Normal${endColour}"
   echo -e "\t\t${turquoiseColour}3${endColour} ${grayColour}- Difficult${endColour}"
   echo -e "\t\t${turquoiseColour}4${endColour} ${grayColour}- Insane${endColour}"
-  echo -e "\t${purpleColour}o)${endColour} ${grayColour}Search by by os:${endColour}"
+  echo -e "\t${purpleColour}o)${endColour} ${grayColour}Search by os:${endColour}"
   echo -e "\t\t${turquoiseColour}1${endColour} ${grayColour}- Linux${endColour}"
-  echo -e "\t\t${turquoiseColour}2${endColour} ${grayColour}- Windows${endColour}"
-  echo -e "\n"
+  echo -e "\t\t${turquoiseColour}2${endColour} ${grayColour}- Windows${endColour}\n"
 }
 
 function update() {
@@ -83,7 +82,7 @@ function get_youtube_link() {
   if [ "${link}" ]; then
     echo -e "\n${yellowColour}[+]${endColour} ${grayColour}Machine with name${endColour} ${blueColour}${machine_name}${endColour} ${grayColour}is resolved in${endColour} ${greenColour}${link}${endColour}\n"
   else
-    echo -e "\n${redColour}[-] Machine with name${endColour} ${blueColour}${machine_name}${endColour} ${redColour}not found.${endColour}\n"
+    echo -e "\n${redColour}[!] Machine with name${endColour} ${blueColour}${machine_name}${endColour} ${redColour}not found.${endColour}\n"
   fi
 }
 
@@ -92,10 +91,19 @@ function search() {
   ip_address=$2
   difficulty=$3
   os=$4
-  result=$(process_list)
+  result=$(process_list | sed '1,2d')
+
+
+  echo "${machine_name}"
 
   if [ "${machine_name}" ]; then
-    result=$(echo "${result}" | grep "${machine_name}")
+    to_evaluate=$(echo "${result}" | awk '{print $1}' | grep "${machine_name}")
+
+    if [ "${to_evaluate}" ]; then
+      result=$(echo "${result}" | grep "${to_evaluate}")
+    else
+      result=""
+    fi
   fi
 
   if [ "${ip_address}" ]; then
@@ -147,25 +155,22 @@ function search() {
   else
     echo -e "\n${yellowColour}[+]${endColour} ${grayColour}No elements found.${endColour}\n"
   fi
-
 }
 
 function show_difficulty_message() {
-  echo -e "\n${redColour}[-] The difficulty entered is not valid.${endColour}\n"
+  echo -e "${redColour}[!] The difficulty entered is not valid.${endColour}"
   echo -e "\n${yellowColour}[+]${endColour} ${grayColour}Please select one of these:${endColour}"
   echo -e "\t${turquoiseColour}1${endColour} ${grayColour}- Easy${endColour}"
   echo -e "\t${turquoiseColour}2${endColour} ${grayColour}- Normal${endColour}"
   echo -e "\t${turquoiseColour}3${endColour} ${grayColour}- Difficult${endColour}"
-  echo -e "\t${turquoiseColour}4${endColour} ${grayColour}- Insane${endColour}"
-  echo -e "\n"
+  echo -e "\t${turquoiseColour}4${endColour} ${grayColour}- Insane${endColour}\n"
 }
 
 function show_os_message() {
-  echo -e "\n${redColour}[-] The os entered is not valid.${endColour}\n"
+  echo -e "${redColour}[!] The os entered is not valid.${endColour}"
   echo -e "\n${yellowColour}[+]${endColour} ${grayColour}Please select one of these:${endColour}"
   echo -e "\t${turquoiseColour}1${endColour} ${grayColour}- Linux${endColour}"
-  echo -e "\t${turquoiseColour}2${endColour} ${grayColour}- Windows${endColour}"
-  echo -e "\n"
+  echo -e "\t${turquoiseColour}2${endColour} ${grayColour}- Windows${endColour}\n"
 }
 
 function process_list() {
@@ -189,7 +194,7 @@ function process_list() {
 # Execution
 trap ctrl_c INT
 
-while getopts "hulm:i:y:d:o:" arg; do
+while getopts "huly:m:i:d:o:s:" arg 2>/dev/null; do
   case $arg in
   h)
     ;;
@@ -215,7 +220,14 @@ while getopts "hulm:i:y:d:o:" arg; do
     parameter_counter=3
     os=$OPTARG
     ;;
+  y)
+    parameter_counter=4
+    machine_name=$OPTARG
+    ;;
   *)
+    echo -e "\n${redColour}[!] Invalid option${endColour}"
+    help_panel
+    exit 1
     ;;
   esac
 done
@@ -225,7 +237,13 @@ if [ $parameter_counter -eq 1 ]; then
 elif [ $parameter_counter -eq 2 ]; then
   list
 elif [ $parameter_counter -eq 3 ]; then
-  search "${machine_name}" "${ip_address}" "${difficulty}" "${os}"
+  if [ ! "${machine_name}" ] && [ ! "${ip_address}" ] && [ ! "${difficulty}" ] && [ ! "${os}" ]; then
+    echo -e "\n${yellowColour}[+]${endColour} ${grayColour}No elements found.${endColour}\n"
+  else
+    search "${machine_name}" "${ip_address}" "${difficulty}" "${os}"
+  fi
+elif [ $parameter_counter -eq 4 ]; then
+  get_youtube_link "${machine_name}"
 else
   help_panel
 fi
