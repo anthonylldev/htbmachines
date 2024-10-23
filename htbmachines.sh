@@ -43,6 +43,22 @@ function help_panel() {
   echo -e "\t\t${turquoiseColour}2${endColour} ${grayColour}- Windows${endColour}\n"
 }
 
+function show_difficulty_message() {
+  echo -e "${redColour}[!] The difficulty entered is not valid.${endColour}"
+  echo -e "\n${yellowColour}[+]${endColour} ${grayColour}Please select one of these:${endColour}"
+  echo -e "\t${turquoiseColour}1${endColour} ${grayColour}- Easy${endColour}"
+  echo -e "\t${turquoiseColour}2${endColour} ${grayColour}- Normal${endColour}"
+  echo -e "\t${turquoiseColour}3${endColour} ${grayColour}- Difficult${endColour}"
+  echo -e "\t${turquoiseColour}4${endColour} ${grayColour}- Insane${endColour}\n"
+}
+
+function show_os_message() {
+  echo -e "${redColour}[!] The os entered is not valid.${endColour}"
+  echo -e "\n${yellowColour}[+]${endColour} ${grayColour}Please select one of these:${endColour}"
+  echo -e "\t${turquoiseColour}1${endColour} ${grayColour}- Linux${endColour}"
+  echo -e "\t${turquoiseColour}2${endColour} ${grayColour}- Windows${endColour}\n"
+}
+
 function update() {
   tput civis
 
@@ -70,9 +86,22 @@ function update() {
   tput cnorm
 }
 
-function list() {
-  echo -e "\n${blueColour}$(process_list | head -n 1)${endColour}"
-  echo -e "${grayColour}$(process_list | sed '1d')${endColour}\n"
+function process_list() {
+  machines=$(sed '/\/\*\! For license information please see bundle.js.LICENSE.txt \*\//,/        }(), lf = \[{/d' ${file_name} | grep -vE / | grep -vE \} | awk "/name:/,/resuelta:/" | grep -vE "id:|sku:|skills:" | tr -d ',' | tr -d '"' | sed 's/^ *//')
+  echo "${machines}" | sed 's/Fácil/Easy/' | sed 's/Media/Normal/' | sed 's/Difícil/Difficult/' | sed 's/^resuelta: !0 *//' | awk -v RS="" -F'\n' '
+    BEGIN { print "Name|IP|OS|Difficult|Skills"; print "----|--|--|---------|----" }
+    {
+        for (i=1; i<=NF; i++) {
+            split($i, a, ": ");
+            if (i == 1) name = a[2];
+            else if (i == 2) ip = a[2];
+            else if (i == 3) so = a[2];
+            else if (i == 4) dificultad = a[2];
+            else if (i == 5) like = a[2];
+        }
+        print name "|" ip "|" so "|" dificultad "|" like;
+    }
+  ' | column -t -s '|'
 }
 
 function get_youtube_link() {
@@ -86,18 +115,36 @@ function get_youtube_link() {
   fi
 }
 
+function list() {
+  echo -e "\n${blueColour}$(process_list | head -n 1)${endColour}"
+  echo -e "${grayColour}$(process_list | sed '1d')${endColour}\n"
+}
+
+function search_by_name() {
+  machine_name=$1
+  echo -e "$(cat ${file_name} | awk "/name: \"${machine_name}\"/"  | tr -d '"' | tr -d ',' | sed 's/^ *//' | awk '{print $2}')"
+}
+
+function search_by_ip() {
+  ip_address=$1
+  echo -e "$(cat ${file_name} | awk "/ip: \"${ip_address}\"/"  | tr -d '"' | tr -d ',' | sed 's/^ *//' | awk '{print $2}')"
+}
+
+function search_by_skills() {
+  skills=$1
+  echo -e "$(cat ${file_name} | awk "/like: \"${skills}\"/"  | tr -d '"' | tr -d ',' | sed 's/^ *//' | awk '{print $2}')"
+}
+
 function search() {
   machine_name=$1
   ip_address=$2
   difficulty=$3
   os=$4
+  skills=$5
   result=$(process_list | sed '1,2d')
 
-
-  echo "${machine_name}"
-
   if [ "${machine_name}" ]; then
-    to_evaluate=$(echo "${result}" | awk '{print $1}' | grep "${machine_name}")
+    to_evaluate=$(search_by_name "${machine_name}")
 
     if [ "${to_evaluate}" ]; then
       result=$(echo "${result}" | grep "${to_evaluate}")
@@ -107,7 +154,13 @@ function search() {
   fi
 
   if [ "${ip_address}" ]; then
-    result=$(echo "${result}" | grep "${ip_address}")
+    to_evaluate=$(search_by_ip "${ip_address}")
+
+    if [ "${to_evaluate}" ]; then
+      result=$(echo "${result}" | grep "${to_evaluate}")
+    else
+      result=""
+    fi
   fi
 
   if [ "${difficulty}" ]; then
@@ -148,6 +201,16 @@ function search() {
     result=$(echo "${result}" | grep "${os_label}")
   fi
 
+  if [ "${skills}" ]; then
+    to_evaluate=$(search_by_skills "${skills}")
+
+    if [ "${to_evaluate}" ]; then
+      result=$(echo "${result}" | grep "${skills}")
+    else
+      result=""
+    fi
+  fi
+
   if [ "${result}" ]; then
     echo -e "\n${blueColour}$(process_list | head -n 1)${endColour}"
     echo -e "${grayColour}$(process_list | head -n 2 | tail -n 1)${endColour}"
@@ -155,40 +218,6 @@ function search() {
   else
     echo -e "\n${yellowColour}[+]${endColour} ${grayColour}No elements found.${endColour}\n"
   fi
-}
-
-function show_difficulty_message() {
-  echo -e "${redColour}[!] The difficulty entered is not valid.${endColour}"
-  echo -e "\n${yellowColour}[+]${endColour} ${grayColour}Please select one of these:${endColour}"
-  echo -e "\t${turquoiseColour}1${endColour} ${grayColour}- Easy${endColour}"
-  echo -e "\t${turquoiseColour}2${endColour} ${grayColour}- Normal${endColour}"
-  echo -e "\t${turquoiseColour}3${endColour} ${grayColour}- Difficult${endColour}"
-  echo -e "\t${turquoiseColour}4${endColour} ${grayColour}- Insane${endColour}\n"
-}
-
-function show_os_message() {
-  echo -e "${redColour}[!] The os entered is not valid.${endColour}"
-  echo -e "\n${yellowColour}[+]${endColour} ${grayColour}Please select one of these:${endColour}"
-  echo -e "\t${turquoiseColour}1${endColour} ${grayColour}- Linux${endColour}"
-  echo -e "\t${turquoiseColour}2${endColour} ${grayColour}- Windows${endColour}\n"
-}
-
-function process_list() {
-  machines=$(sed '/\/\*\! For license information please see bundle.js.LICENSE.txt \*\//,/        }(), lf = \[{/d' ${file_name} | grep -vE / | grep -vE \} | awk "/name:/,/resuelta:/" | grep -vE "id:|sku:|skills:" | tr -d ',' | tr -d '"' | sed 's/^ *//')
-  echo "${machines}" | sed 's/Fácil/Easy/' | sed 's/Media/Normal/' | sed 's/Difícil/Difficult/' | sed 's/^resuelta: !0 *//' | awk -v RS="" -F'\n' '
-    BEGIN { print "Name|IP|OS|Difficult|Skills"; print "----|--|--|---------|----" }
-    {
-        for (i=1; i<=NF; i++) {
-            split($i, a, ": ");
-            if (i == 1) name = a[2];
-            else if (i == 2) ip = a[2];
-            else if (i == 3) so = a[2];
-            else if (i == 4) dificultad = a[2];
-            else if (i == 5) like = a[2];
-        }
-        print name "|" ip "|" so "|" dificultad "|" like;
-    }
-  ' | column -t -s '|'
 }
 
 # Execution
@@ -220,6 +249,10 @@ while getopts "huly:m:i:d:o:s:" arg 2>/dev/null; do
     parameter_counter=3
     os=$OPTARG
     ;;
+  s)
+    parameter_counter=3
+    skills=$OPTARG
+    ;;
   y)
     parameter_counter=4
     machine_name=$OPTARG
@@ -237,10 +270,10 @@ if [ $parameter_counter -eq 1 ]; then
 elif [ $parameter_counter -eq 2 ]; then
   list
 elif [ $parameter_counter -eq 3 ]; then
-  if [ ! "${machine_name}" ] && [ ! "${ip_address}" ] && [ ! "${difficulty}" ] && [ ! "${os}" ]; then
+  if [ ! "${machine_name}" ] && [ ! "${ip_address}" ] && [ ! "${difficulty}" ] && [ ! "${os}" ] && [ ! "${skills}" ]; then
     echo -e "\n${yellowColour}[+]${endColour} ${grayColour}No elements found.${endColour}\n"
   else
-    search "${machine_name}" "${ip_address}" "${difficulty}" "${os}"
+    search "${machine_name}" "${ip_address}" "${difficulty}" "${os}" "${skills}"
   fi
 elif [ $parameter_counter -eq 4 ]; then
   get_youtube_link "${machine_name}"
