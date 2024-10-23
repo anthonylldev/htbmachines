@@ -12,7 +12,7 @@ grayColour="\e[0;37m\033[1m"
 
 # Variables
 file_name="bundle.js"
-file_name_temp="temp_${file_name}"
+path_file_temp="/tmp/htbmachines/${file_name}"
 main_url="https://htbmachines.github.io/${file_name}"
 
 # Pointers
@@ -28,8 +28,19 @@ function ctrl_c() {
 function help_panel() {
   echo -e "\n${yellowColour}[+]${endColour} ${grayColour}Usage:${endColour}"
   echo -e "\t${purpleColour}h)${endColour} ${grayColour}Show help panel.${endColour}"
-  echo -e "\t${purpleColour}m)${endColour} ${grayColour}Search by machine name.${endColour}"
   echo -e "\t${purpleColour}u)${endColour} ${grayColour}Download or update necessary files.${endColour}"
+  echo -e "\t${purpleColour}m)${endColour} ${grayColour}Search by machine name.${endColour}"
+  echo -e "\t${purpleColour}i)${endColour} ${grayColour}Search by ip address.${endColour}"
+  echo -e "\t${purpleColour}y)${endColour} ${grayColour}Get link of the machine resolution by machine name.${endColour}"
+  echo -e "\t${purpleColour}l)${endColour} ${grayColour}List machine names:${endColour}"
+  echo -e "\t${purpleColour}d)${endColour} ${grayColour}List machine names by difficulty:${endColour}"
+  echo -e "\t\t${turquoiseColour}1${endColour} ${grayColour}- Easy${endColour}"
+  echo -e "\t\t${turquoiseColour}2${endColour} ${grayColour}- Normal${endColour}"
+  echo -e "\t\t${turquoiseColour}3${endColour} ${grayColour}- Difficult${endColour}"
+  echo -e "\t\t${turquoiseColour}4${endColour} ${grayColour}- Insane${endColour}"
+  echo -e "\t${purpleColour}o)${endColour} ${grayColour}List machine names by os:${endColour}"
+  echo -e "\t\t${turquoiseColour}1${endColour} ${grayColour}- Linux${endColour}"
+  echo -e "\t\t${turquoiseColour}2${endColour} ${grayColour}- Windows${endColour}"
   echo -e "\n"
 }
 
@@ -43,16 +54,16 @@ function update() {
     echo -e "\n${yellowColour}[+]${endColour} ${grayColour}All files have been downloaded.${endColour}\n"
   else
     echo -e "\n${yellowColour}[+]${endColour} ${grayColour}Checking for updates...${grayColour}"
-    curl -s ${main_url} > ${file_name_temp}
-    js-beautify -f ${file_name_temp} | sponge ${file_name_temp}
-    md5_temp_value=$(md5sum ${file_name_temp} | awk '{print $1}')
+    curl -s ${main_url} > ${path_file_temp}
+    js-beautify -f ${path_file_temp} | sponge ${path_file_temp}
+    md5_temp_value=$(md5sum ${path_file_temp} | awk '{print $1}')
     md5_value=$(md5sum ${file_name} | awk '{print $1}')
 
     if [ "${md5_value}" == "${md5_temp_value}" ]; then
-      rm ${file_name_temp}
+      rm ${path_file_temp}
       echo -e "\n${yellowColour}[+]${endColour} ${grayColour}Already up to date.${endColour}\n"
     else
-      rm ${file_name} && mv ${file_name_temp} ${file_name}
+      rm ${file_name} && mv ${path_file_temp} ./
       echo -e "\n${yellowColour}[+]${endColour} ${grayColour}All files have been updated.${endColour}\n"
     fi
   fi
@@ -61,23 +72,136 @@ function update() {
 }
 
 function search_machine() {
-  machine_name="$1"
-  echo "$machine_name"
+  machine_name=$1
+  info=$(cat ${file_name} | awk "/name: \"${machine_name}\"/,/resuelta:/" | grep -vE "id:|sku:|resuelta:" | tr -d '"' | tr -d ',' | sed 's/^ *//')
+
+  if [ "${info}" ]; then
+    echo -e "\n${info}\n"
+  else
+    echo -e "\n${redColour}[-] Machine with name${endColour} ${blueColour}${machine_name}${endColour} ${redColour}not found.${endColour}\n"
+  fi
+}
+
+function search_ip() {
+  ip_address=$1
+  machine_name=$(cat ${file_name} | grep "ip: \"${ip_address}\"" -B 3 | grep "name: " | awk 'NF{print $NF}' | tr -d '"' | tr -d ',')
+
+  if [ "${machine_name}" ]; then
+    echo -e "\n${yellowColour}[+]${endColour} ${grayColour}Machine with ip address${endColour} ${blueColour}${ip_address}${endColour} ${grayColour}is called${endColour} ${greenColour}${machine_name}${endColour}.\n"
+  else
+    echo -e "\n${redColour}[-] Machine with ip address${endColour} ${blueColour}${ip_address}${endColour} ${redColour}not found.${endColour}\n"
+  fi
+}
+
+function get_youtube_link() {
+  machine_name=$1
+  link=$(cat ${file_name} | awk "/name: \"${machine_name}\"/,/resuelta:/" | grep -vE "id:|sku:|resuelta:" | tr -d '"' | tr -d ',' | sed 's/^ *//' | grep "youtube:" | awk 'NF{print $NF}')
+
+  if [ "${link}" ]; then
+    echo -e "\n${yellowColour}[+]${endColour} ${grayColour}Machine with name${endColour} ${blueColour}${machine_name}${endColour} ${grayColour}is resolved in${endColour} ${greenColour}${link}${endColour}\n"
+  else
+    echo -e "\n${redColour}[-] Machine with name${endColour} ${blueColour}${machine_name}${endColour} ${redColour}not found.${endColour}\n"
+  fi
+}
+
+function list() {
+  cat ${file_name} | grep -vE "pathname:" | grep "name: \"" | awk 'NF{print $NF}' | tr -d ',' | tr -d '"' | column
+}
+
+function list_by_difficulty() {
+  difficulty=$1
+
+  case $1 in
+  1)
+    level="Fácil"
+    levelLabel="Easy"
+    ;;
+  2)
+    level="Media"
+    levelLabel="Normal"
+    ;;
+  3)
+    level="Difícil"
+    levelLabel="Difficult"
+    ;;
+  4)
+    level="Insane"
+    levelLabel="Insane"
+    ;;
+  esac
+
+  if [ "${level}" ]; then
+    echo -e "\n${yellowColour}[+]${endColour} ${grayColour}Machines with difficult${endColour} ${blueColour}${levelLabel}${endColour}:\n"
+    cat ${file_name} | grep "dificultad: \"${level}\"" -B 5 | grep name | awk 'NF{print $NF}' | tr -d '"' | tr -d "," | column
+    echo -e "\n"
+  else
+    echo -e "\n${redColour}[-] The difficulty entered is not valid.${endColour}\n"
+    echo -e "\n${yellowColour}[+]${endColour} ${grayColour}Please select one of these:${endColour}"
+    echo -e "\t${turquoiseColour}1${endColour} ${grayColour}- Easy${endColour}"
+    echo -e "\t${turquoiseColour}2${endColour} ${grayColour}- Normal${endColour}"
+    echo -e "\t${turquoiseColour}3${endColour} ${grayColour}- Difficult${endColour}"
+    echo -e "\t${turquoiseColour}4${endColour} ${grayColour}- Insane${endColour}"
+    echo -e "\n"
+  fi
+}
+
+function list_by_os() {
+  os=$1
+
+  case $1 in
+  1)
+    os_label="Linux"
+    ;;
+  2)
+    os_label="Windows"
+    ;;
+  esac
+
+  if [ "${os_label}" ]; then
+    echo -e "\n${yellowColour}[+]${endColour} ${grayColour}Machines with os${endColour} ${blueColour}${os_label}${endColour}:\n"
+    cat ${file_name} | grep "so: \"${os_label}\"" -B 5 | grep name | awk 'NF{print $NF}' | tr -d '"' | tr -d "," | column
+    echo -e "\n"
+  else
+    echo -e "\n${redColour}[-] The os entered is not valid.${endColour}\n"
+    echo -e "\n${yellowColour}[+]${endColour} ${grayColour}Please select one of these:${endColour}"
+    echo -e "\t${turquoiseColour}1${endColour} ${grayColour}- Linux${endColour}"
+    echo -e "\t${turquoiseColour}2${endColour} ${grayColour}- Windows${endColour}"
+    echo -e "\n"
+  fi
 }
 
 # Execution
 trap ctrl_c INT
 
-while getopts "m:uh" arg; do
+while getopts "hulm:i:y:d:o:" arg; do
   case $arg in
-  m)
-    machine_name=$OPTARG;
-    parameter_counter+=1
+  h)
     ;;
   u)
+    parameter_counter+=1
+    ;;
+  m)
+    machine_name=$OPTARG;
     parameter_counter+=2
     ;;
-  h)
+  i)
+    ip_address=$OPTARG
+    parameter_counter+=3
+    ;;
+  y)
+    machine_name=$OPTARG
+    parameter_counter+=4
+    ;;
+  l)
+    parameter_counter+=5
+    ;;
+  d)
+    difficulty=$OPTARG
+    parameter_counter+=6
+    ;;
+  o)
+    os=$OPTARG
+    parameter_counter+=7
     ;;
   *)
     ;;
@@ -85,9 +209,19 @@ while getopts "m:uh" arg; do
 done
 
 if [ $parameter_counter -eq 1 ]; then
-  search_machine "$machine_name"
-elif [ $parameter_counter -eq 2 ]; then
   update
+elif [ $parameter_counter -eq 2 ]; then
+  search_machine "$machine_name"
+elif [ $parameter_counter -eq 3 ]; then
+  search_ip "$ip_address"
+elif [ $parameter_counter -eq 4 ]; then
+  get_youtube_link "$machine_name"
+elif [ $parameter_counter -eq 5 ]; then
+  list
+elif [ $parameter_counter -eq 6 ]; then
+  list_by_difficulty "$difficulty"
+elif [ $parameter_counter -eq 7 ]; then
+  list_by_os "$os"
 else
   help_panel
 fi
