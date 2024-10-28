@@ -34,30 +34,30 @@ function help_panel() {
   echo -e "\n${yellowColour}[+]${endColour} ${grayColour}Search Options:${endColour}\n"
 
   echo -e "\t${blueColour}y)${endColour} ${grayColour}Get solution video link by machine name.${endColour}"
-  echo -e "\t\t${blueColour}Usage:${endColour} ${grayColour}-y <machine_name>${endColour}"
+  echo -e "\t\t${blueColour}Usage:${endColour} ${grayColour}-y <machine_name>${endColour}\n"
 
   echo -e "\t${blueColour}m)${endColour} ${grayColour}Search by machine name.${endColour}"
-  echo -e "\t\t${blueColour}Usage:${endColour} ${grayColour}-m <machine_name>${endColour}"
+  echo -e "\t\t${blueColour}Usage:${endColour} ${grayColour}-m <machine_name>${endColour}\n"
 
   echo -e "\t${blueColour}i)${endColour} ${grayColour}Search by IP address.${endColour}"
-  echo -e "\t\t${blueColour}Usage:${endColour} ${grayColour}-i <ip_address>${endColour}"
+  echo -e "\t\t${blueColour}Usage:${endColour} ${grayColour}-i <ip_address>${endColour}\n"
+
+  echo -e "\t${blueColour}s)${endColour} ${grayColour}Search by skill.${endColour}"
+  echo -e "\t\t${blueColour}Usage:${endColour} ${grayColour}-s <skill>${endColour}\n"
 
   echo -e "\t${blueColour}d)${endColour} ${grayColour}Search by difficulty level:${endColour}"
   echo -e "\t\t${turquoiseColour}1${endColour} ${grayColour}- Easy${endColour}"
   echo -e "\t\t${turquoiseColour}2${endColour} ${grayColour}- Normal${endColour}"
   echo -e "\t\t${turquoiseColour}3${endColour} ${grayColour}- Difficult${endColour}"
   echo -e "\t\t${turquoiseColour}4${endColour} ${grayColour}- Insane${endColour}"
-  echo -e "\t\t${blueColour}Usage:${endColour} ${grayColour}-d <level>${endColour}"
+  echo -e "\t\t${blueColour}Usage:${endColour} ${grayColour}-d <level>${endColour}\n"
 
   echo -e "\t${blueColour}o)${endColour} ${grayColour}Search by operating system:${endColour}"
   echo -e "\t\t${turquoiseColour}1${endColour} ${grayColour}- Linux${endColour}"
   echo -e "\t\t${turquoiseColour}2${endColour} ${grayColour}- Windows${endColour}"
   echo -e "\t\t${blueColour}Usage:${endColour} ${grayColour}-o <os_type>${endColour}"
 
-  echo -e "\t${blueColour}s)${endColour} ${grayColour}Search by skill.${endColour}"
-  echo -e "\t\t${blueColour}Usage:${endColour} ${grayColour}-s <skill>${endColour}"
-
-  echo -e "\n${yellowColour}[+]${endColour} ${grayColour}Example Usage:${endColour}"
+  echo -e "\n${yellowColour}[+]${endColour} ${grayColour}Example Usage:${endColour}\n"
   echo -e "\t${blueColour}bash htbmachines.sh -m <machine_name> -i <ip_address> -d <difficulty_level> -o <os_type> -s <skill>${endColour}\n"
 }
 
@@ -143,7 +143,7 @@ function get_youtube_link() {
 }
 
 function list() {
-  echo -e "\n${blueColour}$(process_list | head -n 1)${endColour}"
+  echo -e "\n${purpleColour}$(process_list | head -n 1)${endColour}"
   echo -e "${grayColour}$(process_list | sed '1d')${endColour}\n"
 }
 
@@ -239,7 +239,7 @@ function search() {
   fi
 
   if [ "${result}" ]; then
-    echo -e "\n${blueColour}$(process_list | head -n 1)${endColour}"
+    echo -e "\n${purpleColour}$(process_list | head -n 1)${endColour}"
     echo -e "${grayColour}$(process_list | head -n 2 | tail -n 1)${endColour}"
     echo -e "${grayColour}${result}${endColour}\n"
   else
@@ -297,11 +297,7 @@ if [ $parameter_counter -eq 1 ]; then
 elif [ $parameter_counter -eq 2 ]; then
   list
 elif [ $parameter_counter -eq 3 ]; then
-  if [ ! "${machine_name}" ] && [ ! "${ip_address}" ] && [ ! "${difficulty}" ] && [ ! "${os}" ] && [ ! "${skill}" ]; then
-    echo -e "\n${yellowColour}[+]${endColour} ${grayColour}No elements found.${endColour}\n"
-  else
-    search "${machine_name}" "${ip_address}" "${difficulty}" "${os}" "${skill}"
-  fi
+  search "${machine_name}" "${ip_address}" "${difficulty}" "${os}" "${skill}"
 elif [ $parameter_counter -eq 4 ]; then
   get_youtube_link "${machine_name}"
 else
