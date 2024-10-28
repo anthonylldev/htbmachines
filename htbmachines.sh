@@ -58,7 +58,7 @@ function help_panel() {
   echo -e "\t\t${blueColour}Usage:${endColour} ${grayColour}-s <skill>${endColour}"
 
   echo -e "\n${yellowColour}[+]${endColour} ${grayColour}Example Usage:${endColour}"
-  echo -e "\t${blueColour}bash htbmachines.sh -m <machine_name> -i <ip_address> -d <difficulty_level> -o <os_type>${endColour}\n"
+  echo -e "\t${blueColour}bash htbmachines.sh -m <machine_name> -i <ip_address> -d <difficulty_level> -o <os_type> -s <skill>${endColour}\n"
 }
 
 function show_difficulty_message() {
@@ -80,24 +80,33 @@ function show_os_message() {
 function update() {
   tput civis
 
-  if [ ! -f ${file_name} ]; then
-    echo -e "\n${yellowColour}[+]${endColour} ${grayColour}Downloading necessary files...${endColour}"
-    curl -s ${main_url} > ${file_name}
-    js-beautify -f ${file_name} | sponge ${file_name}
-    echo -e "\n${yellowColour}[+]${endColour} ${grayColour}All files have been downloaded.${endColour}\n"
-  else
-    echo -e "\n${yellowColour}[+]${endColour} ${grayColour}Checking for updates...${grayColour}"
-    curl -s ${main_url} > ${path_file_temp}
-    js-beautify -f ${path_file_temp} | sponge ${path_file_temp}
-    md5_temp_value=$(md5sum ${path_file_temp} | awk '{print $1}')
-    md5_value=$(md5sum ${file_name} | awk '{print $1}')
+  echo -e "\n${yellowColour}[+]${endColour} ${grayColour}Checking for necessary files...${endColour}"
 
-    if [ "${md5_value}" == "${md5_temp_value}" ]; then
-      rm ${path_file_temp}
-      echo -e "\n${yellowColour}[+]${endColour} ${grayColour}Already up to date.${endColour}\n"
+  if [ ! -f ${file_name} ]; then
+    echo -e "${yellowColour}[+]${endColour} ${grayColour}Downloading necessary files...${endColour}"
+  else
+    echo -e "${yellowColour}[+]${endColour} ${grayColour}Checking for updates...${endColour}"
+  fi
+
+  # Download the file
+  if ! curl -s -o ${path_file_temp} ${main_url}; then
+    echo -e "${redColour}[!] Error downloading file.${endColour}"
+    tput cnorm
+    exit 1
+  fi
+
+  js-beautify -f ${path_file_temp} | sponge ${path_file_temp}
+
+  if [ ! -f ${file_name} ]; then
+    mv ${path_file_temp} ${file_name}
+    echo -e "${yellowColour}[+]${endColour} ${grayColour}File downloaded successfully.${endColour}\n"
+  else
+    if [ "$(md5sum ${file_name} | awk '{print $1}')" != "$(md5sum ${path_file_temp} | awk '{print $1}')" ]; then
+      mv ${path_file_temp} ${file_name}
+      echo -e "${yellowColour}[+]${endColour} ${grayColour}File updated successfully.${endColour}\n"
     else
-      rm ${file_name} && mv ${path_file_temp} ./
-      echo -e "\n${yellowColour}[+]${endColour} ${grayColour}All files have been updated.${endColour}\n"
+      rm ${path_file_temp}
+      echo -e "${yellowColour}[+]${endColour} ${grayColour}Already up to date.${endColour}\n"
     fi
   fi
 
